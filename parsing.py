@@ -14,16 +14,15 @@ class RecipeParser:
     def __init__(self, url):
         self.__URL = url
     # основная функция парсинга
-    def parsing(self) -> List[RecipeBase]:
+    def parsing(self, count : int) -> List[RecipeBase]:
 
         recipes = []
         recipe = RecipeBase()
-        while True:
-            # ввод айдишника рецепта
-            print('Введите номер рецепта, который хотите спарсить.\nЕсли хотите остановить выполнение программы введите 0\nid = ', end='')
-            page_num = int(input())
-            if page_num == 0:
-                break
+
+        page_num = 0
+
+        while len(recipes) >= count:
+            page_num += 1
             # собираем готовый url
             url = f"{self.__URL}?rid={page_num}"
             print(f"Парсинг страницы: {url}")
@@ -234,13 +233,78 @@ class RecipeParser:
                 quantity += quantity_unit[i]
         return quantity, unit
 
+# функция, возвращающая список всех категорий, которые встретились при парсинге, для добавления в 
+# таблицу categories в БД
+def get_all_categories(recipes : List[RecipeBase]) -> set[str]:
+    categories = List()
+    for recipe in recipes:
+        for category in recipe.categories:
+            categories.append(category)
+    return set(categories)
+
+# функция, возвращающая список всех ингредиентов, которые встретились при парсинге, для добавления в 
+# таблицу ingredients в БД
+def get_all_ingredients(recipes : List[RecipeBase]) -> set[str]:
+    ingredients = List()
+    for recipe in recipes:
+        for ingredient in recipe.ingredients:
+            ingredients.append(ingredient.ingredient_name)
+    return set(ingredients)
+
+# функция, возвращающая список всех рецептов, которые встретились при парсинге, но без списка ингредиентов
+# и категорий, для добавления в таблицу categories в БД
+def get_all_recipes(recipes : List[RecipeBase]) -> list:
+    result_recipes = []
+    current_recipe = {'recipe_name': None, 'number_of_servings': None, 'cooking_time': None, 'description': None}
+    for recipe in recipes:
+        current_recipe['recipe_name'] = recipe.recipe_name
+        current_recipe['number_of_servings'] = recipe.number_of_servings
+        current_recipe['cooking_time'] = recipe.cooking_time
+        current_recipe['description'] = recipe.description
+        result_recipes.append(current_recipe)
+    return result_recipes
+
+# функция поиска строки в массиве строк, возвращаемое значение - {индекс искомой строки в массиве + 1}
+def search_string_in_string_list(list : List[str], finding_string : str) -> int:
+    if finding_string not in list:
+        raise RuntimeError('Array does not contain the given string')
+    for i in range(len(list)):
+        if list[i] == finding_string:
+            return i + 1
+
+# функция, формирующая список со строчками для сводной таблицы recipe|ingredient
+def get_ingredients_and_recipe_db_table(recipes: List[RecipeBase]) -> list:
+    result_list = []
+    current_row = {'recipe_id': None, 'ingredient_id' : None, 'quantity' : None, 'unit' : None}
+    ingredients = get_all_ingredients(recipes)
+    for i in range(len(recipes)):
+        current_row['recipe_id'] = i + 1
+        for ingredient in recipes[i].ingredients:
+            current_row['ingredient_id'] = search_string_in_string_list(ingredients, ingredient.ingredient_name)
+            current_row['quantity'] = ingredient.ingredient_quantity
+            current_row['unit'] = ingredient.ingredient_unit
+            result_list.append(current_row)
+    return result_list
+
+# функция, формирующая список со строчками для сводной таблицы recipe|category 
+def get_categories_and_recipe_db_table(recipes: List[RecipeBase]) -> list:
+    result_list = []
+    current_row = {'recipe_id': None, 'category_id' : None}
+    categories = get_all_categories(recipes)
+    for i in range(len(recipes)):
+        current_row['recipe_id'] = i + 1
+        for category in recipes[i].categories:
+            current_row['category_id'] = search_string_in_string_list(categories, category)
+            result_list.append(current_row)
+    return result_list
+
 def main():
 
     # всего на сайте russianfood ~177000 рецептов
     # создание объекта класса RecipeParser
     parser = RecipeParser(BASE_URL)
     # массив со всеми рецептами, которые удалось спарсить
-    recipes = parser.parsing()
+    recipes = parser.parsing(10)
     
     for recipe in recipes:
         print(f"Название рецепта: {recipe.recipe_name}")
