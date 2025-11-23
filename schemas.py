@@ -18,7 +18,7 @@ class Ingredient(IngredientBase):
 # этот класс уже для рецепта. Ингридиент как единица имеет только название, но в рецепте у него появляется еще
 # 2 характеристики: количество и единицы измерения
 class IngredientInRecipe(IngredientBase):
-    ingredient_quantity: str
+    ingredient_quantity: float
     ingredient_unit: str
 
 # для остальных классов в этом файле аналогично: класс базы, класс для создания (копия базы), класс для бдшки
@@ -37,7 +37,7 @@ class Category(CategoryBase):
 class RecipeBase(BaseModel):
     recipe_name: str
     number_of_servings: Optional[int] = None
-    cooking_time: Optional[int] = None
+    cooking_time: Optional[str] = None
     description: Optional[str] = None
 
 class RecipeCreate(RecipeBase):
@@ -47,15 +47,12 @@ class RecipeCreate(RecipeBase):
 class RecipeUpdate(BaseModel):
     recipe_name: Optional[str] = None
     number_of_servings: Optional[int] = None
-    cooking_time: Optional[int] = None
+    cooking_time: Optional[str] = None
     description: Optional[str] = None
     ingredients: Optional[List[IngredientInRecipe]] = None
     categories: Optional[List[str]] = None
 
 class Recipe(RecipeBase):
     id: int
-    ingredients: List[IngredientInRecipe]
-    categories: List[Category]
-    
     class Config:
         orm_mode = True

@@ -1,4 +1,4 @@
-from sqlalchemy import Column, Integer, String, ForeignKey, Table
+from sqlalchemy import Column, Integer, String, ForeignKey, Table, Float
 from sqlalchemy.orm import relationship
 from database import Base
 
@@ -12,7 +12,7 @@ recipe_category = Table('recipe_category', Base.metadata,
 recipe_ingredient = Table('recipe_ingredient', Base.metadata,
     Column('recipe_id', Integer, ForeignKey('recipes.id')),
     Column('ingredient_id', Integer, ForeignKey('ingredients.id')),
-    Column('quantity', String),  # количество для данного рецепта
+    Column('quantity', Float),  # количество для данного рецепта
     Column('unit', String)       # единицы измерения для данного рецепта
 )
 
@@ -43,7 +43,7 @@ class Recipe(Base):
     # на какое количество персон рецепт
     number_of_servings  = Column(Integer)
     # время приготовления
-    cooking_time        = Column(Integer)
+    cooking_time        = Column(String)
     # описание рецепта
     description         = Column(String)
     # связь с ингредиентами (многие-ко-многим)

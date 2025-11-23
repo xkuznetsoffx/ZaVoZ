@@ -5,6 +5,7 @@ import time
 from urllib.parse import urljoin
 from entities import IngredientBase, RecipeBase
 from typing import List, Tuple
+import re
 
 BASE_URL = "https://www.russianfood.com/recipes/recipe.php" 
 
@@ -21,7 +22,7 @@ class RecipeParser:
 
         page_num = 0
 
-        while len(recipes) >= count:
+        while len(recipes) < count:
             page_num += 1
             # собираем готовый url
             url = f"{self.__URL}?rid={page_num}"
@@ -38,9 +39,6 @@ class RecipeParser:
             recipe = self.__get_full_recipe(soup)
             if recipe.recipe_name:
                 recipes.append(recipe)
-            print(recipe)
-            print('Для продолжения нажмите любую клавишу...')
-            input()
         return recipes
     # функция получения html страницы по url
     def __get_page(self, url) -> str:
@@ -110,16 +108,16 @@ class RecipeParser:
         # Извлекаем порции
         portions = sub_info.find('span', class_='hl')
         if portions:
-            info['portions'] = portions.get_text(strip=True)
+            info['portions'] = int(portions.get_text(strip=True))
         
         # Извлекаем время готовки
         time_elements = sub_info.find_all('span', class_='hl')
         if len(time_elements) >= 2:
-            info['total_time'] = time_elements[1].get_text(strip=True)  # общее время
+            info['total_time'] = str(time_elements[1].get_text(strip=True))  # общее время
         if len(time_elements) >= 3:
-            info['prep_time'] = time_elements[2].get_text(strip=True)   # ваше время
+            info['prep_time'] = str(time_elements[2].get_text(strip=True))   # ваше время
         else:
-            info['total_time'] = 0
+            info['total_time'] = "0"
         return info
     # функция получения краткого описания рецепта
     def __get_recipe_description(self, soup) -> str:
@@ -181,13 +179,32 @@ class RecipeParser:
         ingredient.ingredient_name = name_span.get_text(strip=True) if name_span else name_cell.get_text(strip=True)
         # получаем его количество
         quantity_cell = cells[1]
-        ingredient.ingredient_quantity = quantity_cell.get_text(strip=True)
-        # получааем единицы измерения
+        ingredient.ingredient_quantity = self.__convert_quantity_from_str_to_float(quantity_cell.get_text(strip=True))
+        # получаем единицы измерения
         unit_cell = cells[2]
         unit_nobr = unit_cell.find('nobr')
         ingredient.ingredient_unit = unit_nobr.get_text(strip=True) if unit_nobr else unit_cell.get_text(strip=True)
-        
         return ingredient
+    # перевод количества ингридиента из str в float
+    def __convert_quantity_from_str_to_float(self, quantity : str):
+        result = 0
+        quantity = re.sub(r'[a-zA-Zа-яА-Я]', '', quantity)
+        if quantity.strip() == '':
+            return 0
+        if '-' in quantity:
+            parts = quantity.split('-', 1) 
+            for part in parts:
+                result += float(part)
+            return result / len(parts)
+        elif '—' in quantity:
+            parts = quantity.split('—', 1) 
+            for part in parts:
+                result += float(part)
+            return result / len(parts)
+        elif ',' in quantity:
+            quantity = quantity.replace(' ', '').replace(',', '.')
+        # еще были случаи ¼, но если вылезут то нужно будет обработать
+        return float(quantity)
     # парсинг нового формата рецептов
     def __parse_new_format(self, cell) -> IngredientBase:
 
@@ -201,11 +218,12 @@ class RecipeParser:
         full_text = span.get_text(strip=True)
         # разбиваем по тире (в основном в рецептах нового образца разделителем является '—' между названием ингридиента 
         # и его еоличеством и единиц измерения)
+        parts = []
         if '—' in full_text:
             parts = full_text.split('—', 1) 
         # если нет тире, пока на похуй возвращаю каку как есть
-        else:
-            ingredient.ingredient_name = full_text
+        elif '-' in full_text:
+            parts = full_text.split('-', 1)
         
         if len(parts) == 2:
             # удаляем лишние пробелы, если они есть
@@ -213,20 +231,20 @@ class RecipeParser:
             quantity_unit = parts[1].strip()
 
             quantity, unit = self.__extract_quantity_and_unit(quantity_unit)
-            ingredient.ingredient_quantity = quantity
+            ingredient.ingredient_quantity = self.__convert_quantity_from_str_to_float(quantity)
             ingredient.ingredient_unit = unit
-            return ingredient
-        
-        return None
+        else:
+            ingredient.ingredient_name = full_text
+        return ingredient
     # функция для разбиения количества и единиц измерения из новой записи ингридиента на сайте
     def __extract_quantity_and_unit(self, quantity_unit) -> Tuple[str, str]:
         quantity, unit = '', ''
-        # суть в том, что пока мы не встретили подстроку "пробел + русская буква" - это все прибавляем к количеству, 
+        # суть в том, что пока мы не встретили подстроку "пробел|\t + русская буква" - это все прибавляем к количеству, 
         # а остальное что осталось к единицам измеререния
         for i in range(len(quantity_unit) - 1):
             # 1040 - А
             # 1103 - я
-            if quantity_unit[i] == ' ' and (ord(quantity_unit[i + 1]) >= 1040 and ord(quantity_unit[i + 1]) <= 1103):
+            if (quantity_unit[i] == ' ' or quantity_unit[i] == '\t') and (ord(quantity_unit[i + 1]) >= 1040 and ord(quantity_unit[i + 1]) <= 1103):
                 unit = quantity_unit[i+1:]
                 break
             else:
@@ -236,7 +254,7 @@ class RecipeParser:
 # функция, возвращающая список всех категорий, которые встретились при парсинге, для добавления в 
 # таблицу categories в БД
 def get_all_categories(recipes : List[RecipeBase]) -> set[str]:
-    categories = List()
+    categories = []
     for recipe in recipes:
         for category in recipe.categories:
             categories.append(category)
@@ -245,7 +263,7 @@ def get_all_categories(recipes : List[RecipeBase]) -> set[str]:
 # функция, возвращающая список всех ингредиентов, которые встретились при парсинге, для добавления в 
 # таблицу ingredients в БД
 def get_all_ingredients(recipes : List[RecipeBase]) -> set[str]:
-    ingredients = List()
+    ingredients = []
     for recipe in recipes:
         for ingredient in recipe.ingredients:
             ingredients.append(ingredient.ingredient_name)
@@ -255,12 +273,13 @@ def get_all_ingredients(recipes : List[RecipeBase]) -> set[str]:
 # и категорий, для добавления в таблицу categories в БД
 def get_all_recipes(recipes : List[RecipeBase]) -> list:
     result_recipes = []
-    current_recipe = {'recipe_name': None, 'number_of_servings': None, 'cooking_time': None, 'description': None}
     for recipe in recipes:
-        current_recipe['recipe_name'] = recipe.recipe_name
-        current_recipe['number_of_servings'] = recipe.number_of_servings
-        current_recipe['cooking_time'] = recipe.cooking_time
-        current_recipe['description'] = recipe.description
+        current_recipe = {
+            'recipe_name': recipe.recipe_name,
+            'number_of_servings': recipe.number_of_servings,
+            'cooking_time': recipe.cooking_time,
+            'description': recipe.description
+        }
         result_recipes.append(current_recipe)
     return result_recipes
 
@@ -275,26 +294,30 @@ def search_string_in_string_list(list : List[str], finding_string : str) -> int:
 # функция, формирующая список со строчками для сводной таблицы recipe|ingredient
 def get_ingredients_and_recipe_db_table(recipes: List[RecipeBase]) -> list:
     result_list = []
-    current_row = {'recipe_id': None, 'ingredient_id' : None, 'quantity' : None, 'unit' : None}
-    ingredients = get_all_ingredients(recipes)
+    ingredients_set = get_all_ingredients(recipes)
+    ingredients_list = list(ingredients_set)
     for i in range(len(recipes)):
-        current_row['recipe_id'] = i + 1
         for ingredient in recipes[i].ingredients:
-            current_row['ingredient_id'] = search_string_in_string_list(ingredients, ingredient.ingredient_name)
-            current_row['quantity'] = ingredient.ingredient_quantity
-            current_row['unit'] = ingredient.ingredient_unit
+            current_row = {
+                'recipe_id': i + 1,
+                'ingredient_id': search_string_in_string_list(ingredients_list, ingredient.ingredient_name),
+                'quantity': ingredient.ingredient_quantity,
+                'unit': ingredient.ingredient_unit
+            }
             result_list.append(current_row)
     return result_list
 
 # функция, формирующая список со строчками для сводной таблицы recipe|category 
 def get_categories_and_recipe_db_table(recipes: List[RecipeBase]) -> list:
     result_list = []
-    current_row = {'recipe_id': None, 'category_id' : None}
-    categories = get_all_categories(recipes)
+    categories_set = get_all_categories(recipes)
+    categories_list = list(categories_set)
     for i in range(len(recipes)):
-        current_row['recipe_id'] = i + 1
         for category in recipes[i].categories:
-            current_row['category_id'] = search_string_in_string_list(categories, category)
+            current_row = {
+                'recipe_id': i + 1,
+                'category_id': search_string_in_string_list(categories_list, category)
+            }
             result_list.append(current_row)
     return result_list
 
@@ -304,19 +327,24 @@ def main():
     # создание объекта класса RecipeParser
     parser = RecipeParser(BASE_URL)
     # массив со всеми рецептами, которые удалось спарсить
-    recipes = parser.parsing(10)
+    recipes = parser.parsing(100)
     
-    for recipe in recipes:
-        print(f"Название рецепта: {recipe.recipe_name}")
-        print(f"Количество порций = {recipe.number_of_servings}")
-        print(f"Время готовки = {recipe.cooking_time}")
-        print(f"Описание:\n{recipe.description}")
-        print("Ингредиенты:")
-        for ingredient in recipe.ingredients:
-            print(f"{ingredient.ingredient_name}, {ingredient.ingredient_quantity}, {ingredient.ingredient_unit}")
-        print(f"Категории:")
-        for category in recipe.categories:
-            print(category, end=', ')
+    all_recipes = get_all_recipes(recipes)
+
+    for rec in all_recipes:
+        print(rec['recipe_name'], rec['number_of_servings'], rec['cooking_time'], rec['description'])
+
+    # for recipe in recipes:
+    #     print(f"Название рецепта: {recipe.recipe_name}")
+    #     print(f"Количество порций = {recipe.number_of_servings}")
+    #     print(f"Время готовки = {recipe.cooking_time}")
+    #     print(f"Описание:\n{recipe.description}")
+    #     print("Ингредиенты:")
+    #     for ingredient in recipe.ingredients:
+    #         print(f"{ingredient.ingredient_name}, {ingredient.ingredient_quantity}, {ingredient.ingredient_unit}")
+    #     print(f"Категории:")
+    #     for category in recipe.categories:
+    #         print(category, end=', ')
 
 if __name__ == "__main__":
     main()
