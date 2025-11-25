@@ -1,0 +1,386 @@
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+:root {
+    --primary-green: #22c55e;
+    --dark-green: #16a34a;
+    --light-green: #86efac;
+    --lighter-green: #dcfce7;
+    --text-dark: #1f2937;
+    --text-light: #6b7280;
+    --white: #ffffff;
+    --shadow: rgba(34, 197, 94, 0.2);
+}
+
+body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+    background: linear-gradient(135deg, var(--lighter-green) 0%, var(--white) 100%);
+    min-height: 100vh;
+    color: var(--text-dark);
+    line-height: 1.6;
+}
+
+.screen {
+    display: none;
+    min-height: 100vh;
+    padding: 2rem;
+    animation: fadeIn 0.5s ease-in;
+}
+
+.screen.active {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.container {
+    max-width: 800px;
+    width: 100%;
+    text-align: center;
+}
+
+/* Главный экран */
+.logo {
+    font-size: 5rem;
+    font-weight: 800;
+    color: var(--primary-green);
+    margin-bottom: 2rem;
+    text-shadow: 2px 2px 4px var(--shadow);
+    letter-spacing: -2px;
+}
+
+.description {
+    font-size: 1.25rem;
+    color: var(--text-dark);
+    margin-bottom: 1.5rem;
+    font-weight: 500;
+}
+
+.sub-description {
+    font-size: 1rem;
+    color: var(--text-light);
+    margin-bottom: 1rem;
+    text-align: left;
+    max-width: 700px;
+    margin-left: auto;
+    margin-right: auto;
+}
+
+.generate-button {
+    background: var(--primary-green);
+    color: var(--white);
+    border: none;
+    padding: 1.5rem 4rem;
+    font-size: 1.5rem;
+    font-weight: 600;
+    border-radius: 50px;
+    cursor: pointer;
+    margin-top: 3rem;
+    box-shadow: 0 10px 30px var(--shadow);
+    transition: all 0.3s ease;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+}
+
+.generate-button:hover {
+    background: var(--dark-green);
+    transform: translateY(-3px);
+    box-shadow: 0 15px 40px var(--shadow);
+}
+
+.generate-button:active {
+    transform: translateY(-1px);
+}
+
+/* Экран опроса */
+.quiz-container {
+    background: var(--white);
+    border-radius: 20px;
+    padding: 3rem;
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.1);
+    max-width: 600px;
+    margin: 0 auto;
+}
+
+.progress-bar {
+    width: 100%;
+    height: 8px;
+    background: var(--lighter-green);
+    border-radius: 10px;
+    margin-bottom: 2rem;
+    overflow: hidden;
+}
+
+.progress-fill {
+    height: 100%;
+    background: linear-gradient(90deg, var(--primary-green), var(--dark-green));
+    border-radius: 10px;
+    transition: width 0.3s ease;
+    width: 0%;
+}
+
+.question-text {
+    font-size: 1.75rem;
+    color: var(--text-dark);
+    margin-bottom: 2.5rem;
+    font-weight: 600;
+}
+
+.answers-container {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+    margin-bottom: 2rem;
+}
+
+.answer-button {
+    background: var(--white);
+    color: var(--text-dark);
+    border: 2px solid var(--light-green);
+    padding: 1.25rem 2rem;
+    font-size: 1.1rem;
+    border-radius: 12px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    font-weight: 500;
+    text-align: left;
+    position: relative;
+}
+
+.answer-button:hover {
+    background: var(--lighter-green);
+    border-color: var(--primary-green);
+    transform: translateX(5px);
+}
+
+.answer-button.selected {
+    background: var(--primary-green);
+    color: var(--white);
+    border-color: var(--primary-green);
+    box-shadow: 0 5px 15px var(--shadow);
+}
+
+.answer-button.selected::after {
+    content: '✓';
+    position: absolute;
+    right: 1.5rem;
+    font-size: 1.5rem;
+}
+
+.dropdown-button {
+    background: var(--white);
+    color: var(--text-dark);
+    border: 2px solid var(--light-green);
+    padding: 1.25rem 2rem;
+    font-size: 1.1rem;
+    border-radius: 12px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    font-weight: 500;
+    width: 100%;
+    text-align: left;
+    position: relative;
+}
+
+.dropdown-button::after {
+    content: '▼';
+    position: absolute;
+    right: 1.5rem;
+    transition: transform 0.3s ease;
+}
+
+.dropdown-button.open::after {
+    transform: rotate(180deg);
+}
+
+.dropdown-menu {
+    display: none;
+    position: absolute;
+    top: 100%;
+    left: 0;
+    right: 0;
+    background: var(--white);
+    border: 2px solid var(--light-green);
+    border-top: none;
+    border-radius: 0 0 12px 12px;
+    margin-top: -2px;
+    z-index: 10;
+    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+}
+
+.dropdown-menu.show {
+    display: block;
+}
+
+.dropdown-item {
+    padding: 1rem 2rem;
+    cursor: pointer;
+    transition: background 0.2s ease;
+    border-bottom: 1px solid var(--lighter-green);
+}
+
+.dropdown-item:last-child {
+    border-bottom: none;
+}
+
+.dropdown-item:hover {
+    background: var(--lighter-green);
+}
+
+.next-button {
+    background: var(--primary-green);
+    color: var(--white);
+    border: none;
+    padding: 1rem 3rem;
+    font-size: 1.2rem;
+    font-weight: 600;
+    border-radius: 50px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    box-shadow: 0 5px 15px var(--shadow);
+}
+
+.next-button:hover {
+    background: var(--dark-green);
+    transform: translateY(-2px);
+    box-shadow: 0 8px 20px var(--shadow);
+}
+
+.next-button:disabled {
+    background: var(--text-light);
+    cursor: not-allowed;
+    transform: none;
+}
+
+/* Экран результата */
+.recipe-container {
+    background: var(--white);
+    border-radius: 20px;
+    padding: 3rem;
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.1);
+    max-width: 700px;
+    margin: 0 auto 2rem;
+    text-align: left;
+}
+
+.recipe-title {
+    font-size: 2.5rem;
+    color: var(--primary-green);
+    margin-bottom: 1.5rem;
+    font-weight: 700;
+}
+
+.recipe-info {
+    display: flex;
+    gap: 2rem;
+    margin-bottom: 2rem;
+    flex-wrap: wrap;
+}
+
+.recipe-info-item {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    color: var(--text-light);
+    font-size: 1rem;
+}
+
+.recipe-info-item strong {
+    color: var(--text-dark);
+}
+
+.recipe-description {
+    font-size: 1.1rem;
+    color: var(--text-dark);
+    line-height: 1.8;
+    margin-bottom: 2rem;
+}
+
+.recipe-ingredients {
+    margin-top: 2rem;
+}
+
+.recipe-ingredients h3 {
+    font-size: 1.5rem;
+    color: var(--primary-green);
+    margin-bottom: 1rem;
+}
+
+.ingredient-list {
+    list-style: none;
+    padding: 0;
+}
+
+.ingredient-list li {
+    padding: 0.75rem 0;
+    border-bottom: 1px solid var(--lighter-green);
+    font-size: 1rem;
+}
+
+.ingredient-list li:last-child {
+    border-bottom: none;
+}
+
+.back-button {
+    background: var(--text-light);
+    color: var(--white);
+    border: none;
+    padding: 1rem 2.5rem;
+    font-size: 1.1rem;
+    font-weight: 600;
+    border-radius: 50px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.back-button:hover {
+    background: var(--text-dark);
+    transform: translateY(-2px);
+}
+
+/* Адаптивность */
+@media (max-width: 768px) {
+    .logo {
+        font-size: 3.5rem;
+    }
+    
+    .description {
+        font-size: 1.1rem;
+    }
+    
+    .generate-button {
+        padding: 1.25rem 3rem;
+        font-size: 1.25rem;
+    }
+    
+    .quiz-container {
+        padding: 2rem 1.5rem;
+    }
+    
+    .question-text {
+        font-size: 1.5rem;
+    }
+    
+    .recipe-container {
+        padding: 2rem 1.5rem;
+    }
+    
+    .recipe-title {
+        font-size: 2rem;
+    }
+}
+
