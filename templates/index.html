@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ZaVoZ - Кулинарный шопинг-киллер</title>
+    <link rel="stylesheet" href="/static/styles.css">
+</head>
+<body>
+    <!-- Главный экран -->
+    <div id="main-screen" class="screen active">
+        <div class="container">
+            <h1 class="logo">ZaVoZ</h1>
+            <p class="description">
+                ZaVoZ — твой кулинарный шопинг-киллер: генерируем блюда, ищем лучшую цену и собираем корзину, 
+                чтобы готовить вкусно и экономно.
+            </p>
+            <p class="sub-description">
+                Ключевая проблема: Ежедневный вопрос "Что приготовить?" и последующие за ним траты времени на поиск рецептов, 
+                составление списка покупок и "беготню" по магазинам в поисках лучших цен или нужных продуктов съедают огромное количество сил и ресурсов.
+            </p>
+            <p class="sub-description">
+                Решение: ZaVoZ — это веб-приложение, которое объединяет в себе мощный генератор рецептов, умный агрегатор цен 
+                из ближайших магазинов и удобный планировщик покупок. Оно не просто предлагает идеи, а предоставляет готовое, 
+                экономически выгодное решение "под ключ".
+            </p>
+            <button id="generate-btn" class="generate-button">
+                Сгенерировать рецепт
+            </button>
+        </div>
+    </div>
+
+    <div id="quiz-screen" class="screen">
+        <div class="container">
+            <div class="quiz-container">
+                <div class="progress-bar">
+                    <div id="progress-fill" class="progress-fill"></div>
+                </div>
+                <h2 id="question-text" class="question-text"></h2>
+                <div id="answers-container" class="answers-container"></div>
+                <button id="next-btn" class="next-button" style="display: none;">
+                    Далее
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <div id="result-screen" class="screen">
+        <div class="container">
+            <div id="recipe-container" class="recipe-container"></div>
+            <button id="back-to-main-btn" class="back-button">
+                Вернуться на главную
+            </button>
+        </div>
+    </div>
+
+    <script src="/static/script.js"></script>
+</body>
+</html>
+
