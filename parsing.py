@@ -189,7 +189,11 @@ class RecipeParser:
     def __convert_quantity_from_str_to_float(self, quantity : str):
         result = 0
         quantity = re.sub(r'[a-zA-Zа-яА-Я]', '', quantity)
-        if quantity.strip() == '':
+        quantity = quantity.replace(',', ' ')
+        quantity = quantity.replace('.', ' ')
+        quantity = quantity.strip()
+        quantity = quantity.replace(' ', '.')
+        if quantity == '':
             return 0
         if '-' in quantity:
             parts = quantity.split('-', 1) 
@@ -201,8 +205,6 @@ class RecipeParser:
             for part in parts:
                 result += float(part)
             return result / len(parts)
-        elif ',' in quantity:
-            quantity = quantity.replace(' ', '').replace(',', '.')
         # еще были случаи ¼, но если вылезут то нужно будет обработать
         return float(quantity)
     # парсинг нового формата рецептов
